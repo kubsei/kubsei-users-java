@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: kubsei-users
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017/kubsei_users}
+  mvc:
+    problemdetails:
+      enabled: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          google:
+            user-name-attribute: sub
+
+server:
+  port: ${SERVER_PORT:8081}
+  # Behind kubsei-gateway: trust X-Forwarded-* so OAuth2 redirects and client IPs use the public values
+  forward-headers-strategy: framework
+
+kubsei:
+  security:
+    jwt:
+      # Same in every kubsei service; kubsei-users signs, the rest verify. HS256 needs at least 32 bytes.
+      secret: ${JWT_SECRET}
+      issuer: ${JWT_ISSUER:kubsei}
+
+app:
+  jwt:
+    access-token-expiration: 15m
+    refresh-token-expiration: 7d
+  oauth2:
+    default-success-url: ${OAUTH2_SUCCESS_URL:http://localhost:3000/workspace}
+    default-failure-url: ${OAUTH2_FAILURE_URL:http://localhost:3000/login?error=true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  level:
+    com.kubsei.users: DEBUG
