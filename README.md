@@ -18,7 +18,7 @@ mvn spring-boot:run              # http://localhost:8081
 | `JWT_ISSUER` | `kubsei` |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | required |
 | `OAUTH2_SUCCESS_URL` | `http://localhost:3000/workspace` |
-| `OAUTH2_FAILURE_URL` | `http://localhost:3000/login?error=true` |
+| `OAUTH2_FAILURE_URL` | `http://localhost:3000/auth/login?error=true` |
 | `SERVER_PORT` | `8081` |
 
 Reach it through the gateway: Google login redirects are built from the gateway's `X-Forwarded-*` headers.

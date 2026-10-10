@@ -39,7 +39,7 @@ app:
     refresh-token-expiration: 7d
   oauth2:
     default-success-url: ${OAUTH2_SUCCESS_URL:http://localhost:3000/workspace}
-    default-failure-url: ${OAUTH2_FAILURE_URL:http://localhost:3000/login?error=true}
+    default-failure-url: ${OAUTH2_FAILURE_URL:http://localhost:3000/auth/login?error=true}
 
 management:
   endpoints:
