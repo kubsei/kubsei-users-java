@@ -46,18 +46,18 @@ public class AuthService {
 
     public Tokens login(String email, String password, String deviceInfo, String ipAddress) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AuthenticationException("Invalid email or password"));
+                .orElseThrow(() -> new AuthenticationException("INVALID_CREDENTIALS", "Invalid email or password"));
 
         if (user.getProvider() != AuthProvider.LOCAL) {
-            throw new AuthenticationException("Please use " + user.getProvider() + " to login");
+            throw new AuthenticationException("USE_PROVIDER", "Please use " + user.getProvider() + " to login");
         }
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new AuthenticationException("Invalid email or password");
+            throw new AuthenticationException("INVALID_CREDENTIALS", "Invalid email or password");
         }
 
         if (!user.isEnabled()) {
-            throw new AuthenticationException("Account is disabled");
+            throw new AuthenticationException("ACCOUNT_DISABLED", "Account is disabled");
         }
 
         user.setLastLoginAt(Instant.now());
@@ -70,7 +70,7 @@ public class AuthService {
         RefreshToken refreshToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
 
         User user = userRepository.findById(refreshToken.getUserId())
-                .orElseThrow(() -> new AuthenticationException("User not found"));
+                .orElseThrow(() -> new AuthenticationException("SESSION_EXPIRED", "User not found"));
 
         refreshTokenService.revokeToken(refreshTokenStr);
 
