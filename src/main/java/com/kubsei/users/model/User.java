@@ -26,7 +26,8 @@ import java.util.Set;
         name = "provider_providerId_unique_idx",
         def = "{'provider': 1, 'providerId': 1}",
         unique = true,
-        sparse = true
+        // Only accounts linked to a provider: sparse would still index every LOCAL user as {LOCAL, null}
+        partialFilter = "{ 'providerId': { $exists: true } }"
     )
 })
 public class User {
@@ -64,4 +65,9 @@ public class User {
     private Instant updatedAt;
 
     private Instant lastLoginAt;
+
+    /** Consecutive wrong passwords; reaching AuthService.MAX_FAILED_LOGINS sets lockedUntil. */
+    private int failedLogins;
+
+    private Instant lockedUntil;
 }

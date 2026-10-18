@@ -3,6 +3,10 @@ spring:
     name: kubsei-users
   mongodb:
     uri: ${MONGODB_URI:mongodb://localhost:27017/kubsei_users}
+  data:
+    mongodb:
+      # Builds the @Indexed/@CompoundIndex indexes (unique email, token lookups); Spring Data leaves them off by default
+      auto-index-creation: true
   mvc:
     problemdetails:
       enabled: true

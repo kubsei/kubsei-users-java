@@ -34,8 +34,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 principal.user(), request.getHeader("User-Agent"), request.getRemoteAddr());
 
         String targetUrl = UriComponentsBuilder.fromUriString(oAuth2Properties.defaultSuccessUrl())
-                .queryParam("accessToken", tokens.accessToken())
-                .queryParam("refreshToken", tokens.refreshToken())
+                // In the fragment, not the query: browsers never send it to a server, so it stays out of access logs
+                .fragment("accessToken=" + tokens.accessToken() + "&refreshToken=" + tokens.refreshToken())
                 .build().toUriString();
 
         log.info("OAuth2 authentication successful for user: {}", principal.user().getEmail());

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import java.util.Set;
 public class OAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -28,19 +30,44 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         Map<String, Object> attributes = oAuth2User.getAttributes();
-
         AuthProvider provider = AuthProvider.valueOf(registrationId.toUpperCase());
 
+        return new UserPrincipal(resolveUser(provider, attributes), attributes);
+    }
+
+    /** The account for this provider login: the linked one, the one with the same email, or a new one. */
+    User resolveUser(AuthProvider provider, Map<String, Object> attributes) {
         String providerId = extractProviderId(provider, attributes);
         String email = extractEmail(provider, attributes);
         String name = extractName(provider, attributes);
         String avatarUrl = extractAvatarUrl(provider, attributes);
 
-        User user = userRepository.findByProviderAndProviderId(provider, providerId)
+        return userRepository.findByProviderAndProviderId(provider, providerId)
                 .map(existingUser -> updateExistingUser(existingUser, name, avatarUrl))
-                .orElseGet(() -> registerNewUser(provider, providerId, email, name, avatarUrl));
+                .orElseGet(() -> userRepository.findByEmail(email)
+                        .map(existingUser -> linkProvider(existingUser, provider, providerId, attributes, name, avatarUrl))
+                        .orElseGet(() -> registerNewUser(provider, providerId, email, name, avatarUrl)));
+    }
 
-        return new UserPrincipal(user, attributes);
+    /**
+     * Same email, registered with a password. The provider proves the email belongs to whoever is logging in,
+     * while the password may have been set by someone else (sign-up does not verify emails): the provider takes
+     * over, the password is dropped and every open session is closed.
+     */
+    private User linkProvider(User user, AuthProvider provider, String providerId,
+                              Map<String, Object> attributes, String name, String avatarUrl) {
+        if (!Boolean.TRUE.equals(attributes.get("email_verified"))) {
+            throw new OAuth2AuthenticationException(new OAuth2Error("email_not_verified"),
+                    "The provider has not verified " + user.getEmail());
+        }
+        user.setProvider(provider);
+        user.setProviderId(providerId);
+        user.setPassword(null);
+        user.setEmailVerified(true);
+        user.setFailedLogins(0);
+        user.setLockedUntil(null);
+        refreshTokenService.revokeAllUserTokens(user.getId());
+        return updateExistingUser(user, name, avatarUrl);
     }
 
     private String extractProviderId(AuthProvider provider, Map<String, Object> attributes) {

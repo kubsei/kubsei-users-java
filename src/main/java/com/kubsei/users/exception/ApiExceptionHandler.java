@@ -22,6 +22,11 @@ public class ApiExceptionHandler {
         return problem(HttpStatus.UNAUTHORIZED, ex.getMessage(), "SESSION_EXPIRED");
     }
 
+    @ExceptionHandler(InvalidRequestException.class)
+    public ProblemDetail badRequest(InvalidRequestException ex) {
+        return problem(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getCode());
+    }
+
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ProblemDetail conflict(UserAlreadyExistsException ex) {
         return problem(HttpStatus.CONFLICT, ex.getMessage(), "EMAIL_TAKEN");
